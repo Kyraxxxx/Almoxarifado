@@ -49,9 +49,9 @@ class AlmoxarifadoApp(tk.Tk):
         
         self.state = {"products": [], "employees": [], "transactions": []}
         
-        # Main Container to avoid packing/placing on root directly
-        self.main_container = tk.Frame(self, bg=COLORS["bg"])
-        self.main_container.pack(fill="both", expand=True)
+        # Main Wrapper for the entire app UI
+        self.main_wrapper = tk.Frame(self, bg=COLORS["bg"])
+        self.main_wrapper.pack(fill="both", expand=True)
         
         self.setup_styles()
         self.show_login()
@@ -103,38 +103,37 @@ class AlmoxarifadoApp(tk.Tk):
 
 
     def show_login(self):
-        for widget in self.main_container.winfo_children(): widget.destroy()
+        for w in self.main_wrapper.winfo_children(): w.destroy()
         
-        self.login_frame = tk.Frame(self.main_container, bg=COLORS["sidebar"], padx=50, pady=50, highlightthickness=1, highlightbackground=COLORS["border"])
-        self.login_frame.place(relx=0.5, rely=0.5, anchor="center")
+        f = tk.Frame(self.main_wrapper, bg=COLORS["sidebar"], padx=60, pady=60, highlightthickness=1, highlightbackground=COLORS["border"])
+        f.pack(expand=True)
         
-        tk.Label(self.login_frame, text="METAL PRINT", font=("Inter", 24, "bold"), fg="white", bg=COLORS["sidebar"]).pack(pady=10)
-        tk.Label(self.login_frame, text="ALMOXARIFADO DEV", font=("Inter", 12), fg="#94a3b8", bg=COLORS["sidebar"]).pack(pady=(0, 30))
+        tk.Label(f, text="METAL PRINT", font=("Arial", 22, "bold"), fg="white", bg=COLORS["sidebar"]).pack(pady=(0, 10))
+        tk.Label(f, text="ALMOXARIFADO DEV", font=("Arial", 11), fg="#94a3b8", bg=COLORS["sidebar"]).pack(pady=(0, 40))
         
-        self.pwd_entry = tk.Entry(self.login_frame, show="*", font=("Inter", 14), width=20, bd=0, bg="#1e293b", fg="white", insertbackground="white", highlightbackground=COLORS["border"], highlightthickness=1)
-        self.pwd_entry.pack(pady=10, ipady=8)
+        tk.Label(f, text="SENHA DE ACESSO", font=("Arial", 8, "bold"), fg="#94a3b8", bg=COLORS["sidebar"]).pack(anchor="w")
+        self.pwd_entry = tk.Entry(f, show="*", font=("Arial", 14), width=22, bd=0, bg="#1e293b", fg="white", insertbackground="white", highlightbackground=COLORS["border"], highlightthickness=1)
+        self.pwd_entry.pack(pady=(5, 30), ipady=10)
         self.pwd_entry.focus()
         self.pwd_entry.bind("<Return>", lambda e: self.attempt_login())
         
-        tk.Button(self.login_frame, text="ENTRAR AGORA", command=self.attempt_login, bg=COLORS["accent"], fg="white", font=("Inter", 12, "bold"), bd=0, padx=20, pady=10, cursor="hand2").pack(pady=20)
+        tk.Button(f, text="ENTRAR NO SISTEMA", command=self.attempt_login, bg=COLORS["accent"], fg="white", font=("Arial", 11, "bold"), bd=0, padx=20, pady=12, cursor="hand2").pack(fill="x")
 
     def attempt_login(self):
         if self.pwd_entry.get() == "jonas":
-            self.login_frame.destroy()
             self.setup_main_ui()
             self.start_sync()
         else:
             messagebox.showerror("Erro", "Senha incorreta!")
 
     def setup_main_ui(self):
-        for widget in self.main_container.winfo_children(): widget.destroy()
+        for w in self.main_wrapper.winfo_children(): w.destroy()
         
-        # Sidebar
-        self.sidebar = tk.Frame(self.main_container, bg=COLORS["sidebar"], width=240, highlightthickness=1, highlightbackground=COLORS["border"])
+        self.sidebar = tk.Frame(self.main_wrapper, bg=COLORS["sidebar"], width=240, highlightthickness=1, highlightbackground=COLORS["border"])
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
 
-        tk.Label(self.sidebar, text="METAL PRINT", font=("Inter", 14, "bold"), fg="white", bg=COLORS["sidebar"]).pack(pady=30)
+        tk.Label(self.sidebar, text="METAL PRINT", font=("Arial", 14, "bold"), fg="white", bg=COLORS["sidebar"]).pack(pady=40)
         
         self.menu_items = [
             ("Dashboard", self.show_dashboard),
@@ -146,16 +145,14 @@ class AlmoxarifadoApp(tk.Tk):
         ]
         
         for name, cmd in self.menu_items:
-            # White text for high contrast on Dark Navy
-            btn = tk.Button(self.sidebar, text=f"  {name}", command=cmd, font=("Inter", 10, "bold"), 
+            btn = tk.Button(self.sidebar, text=f"  {name}", command=cmd, font=("Arial", 10, "bold"), 
                            fg="white", bg=COLORS["sidebar"], bd=0, anchor="w", 
                            padx=20, pady=12, cursor="hand2", activebackground="#1e293b", activeforeground="white")
             btn.pack(fill="x")
-            # Hover effect
-            btn.bind("<Enter>", lambda e, b=btn: b.config(fg=COLORS["accent"], bg="#1e293b"))
-            btn.bind("<Leave>", lambda e, b=btn: b.config(fg="white", bg=COLORS["sidebar"]))
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#1e293b"))
+            btn.bind("<Leave>", lambda e, b=btn: b.config(bg=COLORS["sidebar"]))
 
-        self.content = tk.Frame(self.main_container, bg=COLORS["bg"], padx=40, pady=40)
+        self.content = tk.Frame(self.main_wrapper, bg=COLORS["bg"], padx=40, pady=40)
         self.content.pack(side="right", fill="both", expand=True)
         
         self.show_dashboard()
@@ -165,7 +162,7 @@ class AlmoxarifadoApp(tk.Tk):
 
     def show_dashboard(self):
         self.clear_content()
-        tk.Label(self.content, text="Visão Geral", font=("Inter", 20, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(anchor="w", pady=(0, 30))
+        tk.Label(self.content, text="VISÃO GERAL", font=("Arial", 18, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(anchor="w", pady=(0, 30))
         
         stats_frame = tk.Frame(self.content, bg=COLORS["bg"])
         stats_frame.pack(fill="x")
