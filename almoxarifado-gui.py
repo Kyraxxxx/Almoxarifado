@@ -111,7 +111,7 @@ class AlmoxarifadoApp(tk.Tk):
         self.pwd_entry.focus()
         self.pwd_entry.bind("<Return>", lambda e: self.attempt_login())
         
-        tk.Button(self.login_frame, text="ACESSAR PAINEL", command=self.attempt_login, bg=COLORS["accent"], fg="white", font=("Inter", 12, "bold"), bd=0, padx=20, pady=10, cursor="hand2").pack(pady=20)
+        tk.Button(self.login_frame, text="ENTRAR AGORA", command=self.attempt_login, bg=COLORS["accent"], fg="white", font=("Inter", 12, "bold"), bd=0, padx=20, pady=10, cursor="hand2").pack(pady=20)
 
     def attempt_login(self):
         if self.pwd_entry.get() == "jonas":
@@ -127,7 +127,7 @@ class AlmoxarifadoApp(tk.Tk):
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
 
-        tk.Label(self.sidebar, text="METAL PRINT", font=("Inter", 14, "bold"), fg=COLORS["accent"], bg=COLORS["sidebar"]).pack(pady=30)
+        tk.Label(self.sidebar, text="METAL PRINT", font=("Inter", 14, "bold"), fg="white", bg=COLORS["sidebar"]).pack(pady=30)
         
         self.menu_items = [
             ("Dashboard", self.show_dashboard),
@@ -139,13 +139,14 @@ class AlmoxarifadoApp(tk.Tk):
         ]
         
         for name, cmd in self.menu_items:
+            # Brightened text for Navy background
             btn = tk.Button(self.sidebar, text=f"  {name}", command=cmd, font=("Inter", 10, "bold"), 
-                           fg="#94a3b8", bg=COLORS["sidebar"], bd=0, anchor="w", 
+                           fg="#cbd5e1", bg=COLORS["sidebar"], bd=0, anchor="w", 
                            padx=20, pady=12, cursor="hand2", activebackground="#1e293b", activeforeground="white")
             btn.pack(fill="x")
             # Hover effect
             btn.bind("<Enter>", lambda e, b=btn: b.config(fg="white", bg="#1e293b"))
-            btn.bind("<Leave>", lambda e, b=btn: b.config(fg="#94a3b8", bg=COLORS["sidebar"]))
+            btn.bind("<Leave>", lambda e, b=btn: b.config(fg="#cbd5e1", bg=COLORS["sidebar"]))
 
         self.content = tk.Frame(self, bg=COLORS["bg"], padx=40, pady=40)
         self.content.pack(side="right", fill="both", expand=True)
