@@ -217,6 +217,7 @@
                 <li data-page="withdraw"><i data-lucide="minus-square"></i> Saídas</li>
                 <li data-page="employees"><i data-lucide="users"></i> Funcionários</li>
                 <li data-page="reports"><i data-lucide="file-text"></i> Relatórios</li>
+                <li onclick="generateInventoryPDF()"><i data-lucide="download-cloud"></i> Backup (PDF)</li>
             </ul>
             <div class="user-profile">
                 <div class="avatar">
@@ -658,6 +659,80 @@
             const fileName = `Relatorio_MetalPrint_${new Date().toISOString().slice(0,10)}.pdf`;
             doc.save(fileName);
             showToast("PDF Gerado com Sucesso!");
+        }
+        function generateInventoryPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // --- CABEÇALHO ---
+            doc.setFillColor(15, 23, 42); // Navy
+            doc.rect(0, 0, 210, 40, 'F');
+            
+            doc.setFontSize(22);
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.text("METAL PRINT", 20, 22);
+            
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text("BACKUP GERAL - ESTOQUE & DADOS DO SISTEMA", 20, 30);
+            
+            doc.text(`DATA: ${new Date().toLocaleDateString('pt-BR')}`, 160, 22);
+            doc.text(`HORA: ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`, 160, 28);
+
+            // --- SEÇÃO 1: ESTOQUE ATUAL ---
+            doc.setTextColor(15, 23, 42);
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("1. INVENTÁRIO DE MATERIAIS", 20, 50);
+
+            const stockRows = state.products.map(p => [
+                p.name.toUpperCase(), 
+                p.category, 
+                `${p.quantity} un.`
+            ]);
+            
+            doc.autoTable({ 
+                startY: 55, 
+                head: [['MATERIAL / PRODUTO', 'CATEGORIA', 'SALDO ATUAL']], 
+                body: stockRows,
+                theme: 'striped',
+                headStyles: { fillColor: [37, 99, 235], fontSize: 9 }, // Accent Blue
+                styles: { fontSize: 8 },
+                margin: { top: 55 }
+            });
+
+            // --- SEÇÃO 2: QUADRO DE FUNCIONÁRIOS ---
+            let finalY = doc.lastAutoTable.finalY + 15;
+            doc.setFontSize(12);
+            doc.text("2. QUADRO DE FUNCIONÁRIOS", 20, finalY);
+
+            const empRows = state.employees.map(e => [
+                e.name.toUpperCase(), 
+                e.role || 'GERAL'
+            ]);
+
+            doc.autoTable({ 
+                startY: finalY + 5, 
+                head: [['NOME COMPLETO', 'CARGO / SETOR']], 
+                body: empRows,
+                theme: 'grid',
+                headStyles: { fillColor: [15, 23, 42], fontSize: 9 },
+                styles: { fontSize: 8 }
+            });
+
+            // --- RODAPÉ ---
+            const pageCount = doc.internal.getNumberOfPages();
+            for(let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(100, 116, 139);
+                doc.text("Documento oficial para fins de auditoria interna - Metal Print", 105, 285, { align: 'center' });
+                doc.text(`Página ${i} de ${pageCount}`, 190, 285, { align: 'right' });
+            }
+            
+            doc.save(`Backup_Almoxarifado_${new Date().toISOString().slice(0,10)}.pdf`);
+            showToast("Backup PDF Gerado!");
         }
     </script>
 </body>
