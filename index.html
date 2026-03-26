@@ -186,11 +186,24 @@
         }
         #maintenance-screen h1 { font-size: 2.5rem; margin-bottom: 1.5rem; color: var(--accent); }
         #maintenance-screen p { font-size: 1.2rem; max-width: 600px; line-height: 1.6; opacity: 0.9; }
+
+        /* Hammer strike animation */
+        .hammer-animate { 
+            animation: strike 0.8s infinite; 
+            transform-origin: bottom right;
+        }
+        @keyframes strike {
+            0% { transform: rotate(0deg); }
+            15% { transform: rotate(-45deg); }
+            25% { transform: rotate(15deg); }
+            35% { transform: rotate(0deg); }
+            100% { transform: rotate(0deg); }
+        }
     </style>
 </head>
 <body>
     <div id="maintenance-screen">
-        <i data-lucide="hammer" style="width: 64px; height: 64px; margin-bottom: 2rem; color: var(--accent)"></i>
+        <i data-lucide="hammer" class="hammer-animate" style="width: 64px; height: 64px; margin-bottom: 2rem; color: var(--accent)"></i>
         <h1>Site em Manutenção</h1>
         <p>Sendo Desenvolvido Por: <strong>Jonas</strong></p>
         <p style="margin-top: 1rem;">Aguarde enquanto o site volta para o Público.<br>Metal Print agradece!</p>
