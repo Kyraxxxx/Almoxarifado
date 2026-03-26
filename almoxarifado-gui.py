@@ -159,23 +159,44 @@ class AlmoxarifadoApp(tk.Tk):
 
     def clear_content(self):
         for widget in self.content.winfo_children(): widget.destroy()
-
     def show_dashboard(self):
         self.clear_content()
-        tk.Label(self.content, text="VISÃO GERAL", font=("Arial", 18, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(anchor="w", pady=(0, 30))
+        tk.Label(self.content, text="VISÃO GERAL", font=("Arial", 18, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(anchor="w", pady=(0, 20))
         
+        # --- ATALHO RÁPIDO: MODO MANUTENÇÃO (PEDIDO PELO USUÁRIO) ---
+        m_frame = tk.Frame(self.content, bg="#ffffff", padx=20, pady=15, highlightthickness=1, highlightbackground=COLORS["accent"])
+        m_frame.pack(fill="x", pady=(0, 25))
+        
+        m_state = self.state.get("settings", {}).get("maintenanceMode", False)
+        status_text = "SITE EM MANUTENÇÃO 🛠️" if m_state else "SITE ONLINE ✅"
+        status_color = COLORS["error"] if m_state else COLORS["success"]
+        
+        tk.Label(m_frame, text=status_text, font=("Arial", 11, "bold"), fg=status_color, bg="#ffffff").pack(side="left")
+        
+        btn_text = "DESATIVAR MANUTENÇÃO" if m_state else "ATIVAR MANUTENÇÃO"
+        
+        def quick_toggle():
+            new_state = not m_state
+            fb_request("settings", "PATCH", {"maintenanceMode": new_state})
+            if "settings" not in self.state: self.state["settings"] = {}
+            self.state["settings"]["maintenanceMode"] = new_state
+            self.show_dashboard()
+
+        tk.Button(m_frame, text=btn_text, command=quick_toggle, bg=COLORS["accent"], fg="white", font=("Arial", 9, "bold"), bd=0, padx=15, pady=8).pack(side="right")
+
+        # Stats
         stats_frame = tk.Frame(self.content, bg=COLORS["bg"])
         stats_frame.pack(fill="x")
         
         def create_stat(parent, label, value, color):
             f = tk.Frame(parent, bg=COLORS["card"], padx=25, pady=20, highlightthickness=1, highlightbackground=COLORS["border"])
             f.pack(side="left", padx=(0, 20), expand=True, fill="both")
-            tk.Label(f, text=label, font=("Inter", 9, "bold"), fg=COLORS["text_muted"], bg=COLORS["card"]).pack(anchor="w")
-            tk.Label(f, text=value, font=("Inter", 24, "bold"), fg=color, bg=COLORS["card"]).pack(anchor="w", pady=(5, 0))
+            tk.Label(f, text=label, font=("Arial", 9, "bold"), fg=COLORS["text_muted"], bg=COLORS["card"]).pack(anchor="w")
+            tk.Label(f, text=str(value), font=("Arial", 24, "bold"), fg=color, bg=COLORS["card"]).pack(anchor="w", pady=(5, 0))
 
-        create_stat(stats_frame, "TOTAL PRODUTOS", len(self.state.get("products", [])), COLORS["accent"])
+        create_stat(stats_frame, "PRODUTOS", len(self.state.get("products", [])), COLORS["accent"])
         create_stat(stats_frame, "FUNCIONÁRIOS", len(self.state.get("employees", [])), COLORS["text"])
-        create_stat(stats_frame, "SAÍDAS (TUDO)", len(self.state.get("transactions", [])), COLORS["success"])
+        create_stat(stats_frame, "SAÍDAS", len(self.state.get("transactions", [])), COLORS["success"])
 
     def show_inventory(self):
         self.clear_content()
