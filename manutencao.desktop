@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Manutenção Metal Print
+Comment=Controle de Manutenção e Estoque Metal Print
+Exec=bash -c "cd /home/kyraxz/Almoxarifado && python3 manutencao.py"
+Icon=/home/kyraxz/Almoxarifado/logo.png
+Terminal=true
+Categories=Utility;Application;
+Keywords=metal;print;manutencao;estoque;
+StartupNotify=true
