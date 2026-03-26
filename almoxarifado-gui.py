@@ -43,12 +43,15 @@ def fb_request(path, method="GET", data=None):
 class AlmoxarifadoApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Metal Print - Almoxarifado Dev V4.0")
+        self.title("Metal Print - Almoxarifado Dev V4.2")
         self.geometry("1100x700")
         self.configure(bg=COLORS["bg"])
         
         self.state = {"products": [], "employees": [], "transactions": []}
-        self.current_page = None
+        
+        # Main Container to avoid packing/placing on root directly
+        self.main_container = tk.Frame(self, bg=COLORS["bg"])
+        self.main_container.pack(fill="both", expand=True)
         
         self.setup_styles()
         self.show_login()
@@ -100,7 +103,9 @@ class AlmoxarifadoApp(tk.Tk):
 
 
     def show_login(self):
-        self.login_frame = tk.Frame(self, bg=COLORS["sidebar"], padx=50, pady=50, highlightthickness=1, highlightbackground=COLORS["border"])
+        for widget in self.main_container.winfo_children(): widget.destroy()
+        
+        self.login_frame = tk.Frame(self.main_container, bg=COLORS["sidebar"], padx=50, pady=50, highlightthickness=1, highlightbackground=COLORS["border"])
         self.login_frame.place(relx=0.5, rely=0.5, anchor="center")
         
         tk.Label(self.login_frame, text="METAL PRINT", font=("Inter", 24, "bold"), fg="white", bg=COLORS["sidebar"]).pack(pady=10)
@@ -122,8 +127,10 @@ class AlmoxarifadoApp(tk.Tk):
             messagebox.showerror("Erro", "Senha incorreta!")
 
     def setup_main_ui(self):
+        for widget in self.main_container.winfo_children(): widget.destroy()
+        
         # Sidebar
-        self.sidebar = tk.Frame(self, bg=COLORS["sidebar"], width=240, highlightthickness=1, highlightbackground=COLORS["border"])
+        self.sidebar = tk.Frame(self.main_container, bg=COLORS["sidebar"], width=240, highlightthickness=1, highlightbackground=COLORS["border"])
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
 
@@ -139,16 +146,16 @@ class AlmoxarifadoApp(tk.Tk):
         ]
         
         for name, cmd in self.menu_items:
-            # Brightened text for Navy background
+            # White text for high contrast on Dark Navy
             btn = tk.Button(self.sidebar, text=f"  {name}", command=cmd, font=("Inter", 10, "bold"), 
-                           fg="#cbd5e1", bg=COLORS["sidebar"], bd=0, anchor="w", 
+                           fg="white", bg=COLORS["sidebar"], bd=0, anchor="w", 
                            padx=20, pady=12, cursor="hand2", activebackground="#1e293b", activeforeground="white")
             btn.pack(fill="x")
             # Hover effect
-            btn.bind("<Enter>", lambda e, b=btn: b.config(fg="white", bg="#1e293b"))
-            btn.bind("<Leave>", lambda e, b=btn: b.config(fg="#cbd5e1", bg=COLORS["sidebar"]))
+            btn.bind("<Enter>", lambda e, b=btn: b.config(fg=COLORS["accent"], bg="#1e293b"))
+            btn.bind("<Leave>", lambda e, b=btn: b.config(fg="white", bg=COLORS["sidebar"]))
 
-        self.content = tk.Frame(self, bg=COLORS["bg"], padx=40, pady=40)
+        self.content = tk.Frame(self.main_container, bg=COLORS["bg"], padx=40, pady=40)
         self.content.pack(side="right", fill="both", expand=True)
         
         self.show_dashboard()
