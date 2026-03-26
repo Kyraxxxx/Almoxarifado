@@ -9,18 +9,20 @@ from datetime import datetime
 # --- CONFIGURAÇÃO FIREBASE ---
 FIREBASE_URL = "https://almoxarifado-dacbe-default-rtdb.firebaseio.com"
 
-# --- TEMA E CORES ---
+# --- CONFIGURAÇÕES VISUAIS (LIGHT MODE PREMIUM) ---
 COLORS = {
-    "bg": "#0f172a",
-    "sidebar": "#1e293b",
-    "accent": "#3b82f6",
-    "text": "#f8fafc",
-    "muted": "#94a3b8",
-    "card": "#1e293b",
-    "error": "#ef4444",
-    "success": "#10b981",
-    "warning": "#f59e0b"
+    "bg": "#f8fafc",        # Slate 50
+    "sidebar": "#ffffff",   # Pure White
+    "card": "#ffffff",      # White
+    "accent": "#2563eb",    # Blue 600
+    "text": "#0f172a",      # Slate 900
+    "text_muted": "#64748b", # Slate 500
+    "border": "#e2e8f0",    # Slate 200
+    "success": "#10b981",   # Emerald 500
+    "error": "#ef4444",     # Red 500
+    "warning": "#f59e0b"    # Amber 500
 }
+RADIUS = 12
 
 # --- UTILITÁRIOS DB ---
 def fb_request(path, method="GET", data=None):
@@ -54,19 +56,57 @@ class AlmoxarifadoApp(tk.Tk):
     def setup_styles(self):
         style = ttk.Style()
         style.theme_use('clam')
-        style.configure("Treeview", background="#1e293b", foreground="white", fieldbackground="#1e293b", borderwidth=0)
-        style.map("Treeview", background=[('selected', COLORS["accent"])])
-        style.configure("TButton", padding=6, relief="flat", background=COLORS["accent"], foreground="white")
+        
+        # General styles for Treeview
+        style.configure("Treeview",
+                        background=COLORS["card"],
+                        foreground=COLORS["text"],
+                        fieldbackground=COLORS["card"],
+                        borderwidth=0,
+                        rowheight=28)
+        style.map("Treeview",
+                  background=[('selected', COLORS["accent"])],
+                  foreground=[('selected', 'white')])
+        
+        # Heading style for Treeview
+        style.configure("Treeview.Heading",
+                        font=("Inter", 10, "bold"),
+                        background=COLORS["border"],
+                        foreground=COLORS["text_muted"],
+                        relief="flat")
+        style.map("Treeview.Heading",
+                  background=[('active', COLORS["border"])])
+
+        # Scrollbar style
+        style.configure("Vertical.TScrollbar",
+                        background=COLORS["border"],
+                        troughcolor=COLORS["bg"],
+                        bordercolor=COLORS["border"],
+                        arrowcolor=COLORS["text_muted"])
+        
+        # Button styles (if using ttk.Button)
+        style.configure("TButton",
+                        padding=6,
+                        relief="flat",
+                        background=COLORS["accent"],
+                        foreground="white",
+                        font=("Inter", 10, "bold"))
+        style.map("TButton",
+                  background=[('active', COLORS["accent"])])
+
+        # Frame styles
         style.configure("Sidebar.TFrame", background=COLORS["sidebar"])
+        style.configure("Content.TFrame", background=COLORS["bg"])
+
 
     def show_login(self):
         self.login_frame = tk.Frame(self, bg=COLORS["bg"])
         self.login_frame.place(relx=0.5, rely=0.5, anchor="center")
         
         tk.Label(self.login_frame, text="METAL PRINT", font=("Inter", 24, "bold"), fg=COLORS["accent"], bg=COLORS["bg"]).pack(pady=10)
-        tk.Label(self.login_frame, text="ALMOXARIFADO DEV", font=("Inter", 12), fg=COLORS["muted"], bg=COLORS["bg"]).pack(pady=(0, 30))
+        tk.Label(self.login_frame, text="ALMOXARIFADO DEV", font=("Inter", 12), fg=COLORS["text_muted"], bg=COLORS["bg"]).pack(pady=(0, 30))
         
-        self.pwd_entry = tk.Entry(self.login_frame, show="*", font=("Inter", 14), width=20, bd=0, bg="#334155", fg="white", insertbackground="white")
+        self.pwd_entry = tk.Entry(self.login_frame, show="*", font=("Inter", 14), width=20, bd=0, bg=COLORS["card"], fg=COLORS["text"], insertbackground=COLORS["text"], highlightbackground=COLORS["border"], highlightthickness=1)
         self.pwd_entry.pack(pady=10, ipady=8)
         self.pwd_entry.focus()
         self.pwd_entry.bind("<Return>", lambda e: self.attempt_login())
@@ -83,28 +123,32 @@ class AlmoxarifadoApp(tk.Tk):
 
     def setup_main_ui(self):
         # Sidebar
-        self.sidebar = tk.Frame(self, bg=COLORS["sidebar"], width=220)
+        self.sidebar = tk.Frame(self, bg=COLORS["sidebar"], width=240, highlightthickness=1, highlightbackground=COLORS["border"])
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
+
+        tk.Label(self.sidebar, text="METAL PRINT", font=("Inter", 14, "bold"), fg=COLORS["accent"], bg=COLORS["sidebar"]).pack(pady=30)
         
-        tk.Label(self.sidebar, text="Menu", font=("Inter", 10, "bold"), fg=COLORS["muted"], bg=COLORS["sidebar"]).pack(pady=(20, 10), padx=20, anchor="w")
-        
-        menu_items = [
+        self.menu_items = [
             ("Dashboard", self.show_dashboard),
             ("Estoque", self.show_inventory),
+            ("Saída", self.show_withdraw),
             ("Funcionários", self.show_employees),
             ("Histórico", self.show_history),
-            ("Auditoria", self.show_audit),
             ("Configurações", self.show_admin)
         ]
         
-        for name, cmd in menu_items:
-            btn = tk.Button(self.sidebar, text=f"  {name}", command=cmd, anchor="w", font=("Inter", 11), bg=COLORS["sidebar"], fg=COLORS["text"], bd=0, padx=20, pady=10, cursor="hand2", activebackground=COLORS["accent"])
+        for name, cmd in self.menu_items:
+            btn = tk.Button(self.sidebar, text=f"  {name}", command=cmd, font=("Inter", 10, "bold"), 
+                           fg=COLORS["text_muted"], bg=COLORS["sidebar"], bd=0, anchor="w", 
+                           padx=20, pady=12, cursor="hand2", activebackground=COLORS["bg"])
             btn.pack(fill="x")
+            # Hover effect
+            btn.bind("<Enter>", lambda e, b=btn: b.config(fg=COLORS["accent"], bg=COLORS["bg"]))
+            btn.bind("<Leave>", lambda e, b=btn: b.config(fg=COLORS["text_muted"], bg=COLORS["sidebar"]))
 
-        # Content Area
-        self.content = tk.Frame(self, bg=COLORS["bg"])
-        self.content.pack(side="right", expand=True, fill="both", padx=30, pady=30)
+        self.content = tk.Frame(self, bg=COLORS["bg"], padx=40, pady=40)
+        self.content.pack(side="right", fill="both", expand=True)
         
         self.show_dashboard()
 
@@ -113,81 +157,166 @@ class AlmoxarifadoApp(tk.Tk):
 
     def show_dashboard(self):
         self.clear_content()
-        tk.Label(self.content, text="Dashboard", font=("Inter", 20, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(anchor="w", pady=(0, 20))
+        tk.Label(self.content, text="Visão Geral", font=("Inter", 20, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(anchor="w", pady=(0, 30))
         
         stats_frame = tk.Frame(self.content, bg=COLORS["bg"])
-        stats_frame.pack(fill="x", pady=10)
+        stats_frame.pack(fill="x")
         
-        self.create_stat_card(stats_frame, "PRODUTOS", str(len(self.state["products"])), 0)
-        self.create_stat_card(stats_frame, "FUNCIONÁRIOS", str(len(self.state["employees"])), 1)
-        self.create_stat_card(stats_frame, "SAÍDAS HOJE", "0", 2) # To update later
+        def create_stat(parent, label, value, color):
+            f = tk.Frame(parent, bg=COLORS["card"], padx=25, pady=20, highlightthickness=1, highlightbackground=COLORS["border"])
+            f.pack(side="left", padx=(0, 20), expand=True, fill="both")
+            tk.Label(f, text=label, font=("Inter", 9, "bold"), fg=COLORS["text_muted"], bg=COLORS["card"]).pack(anchor="w")
+            tk.Label(f, text=value, font=("Inter", 24, "bold"), fg=color, bg=COLORS["card"]).pack(anchor="w", pady=(5, 0))
 
-    def create_stat_card(self, parent, label, value, col):
-        card = tk.Frame(parent, bg=COLORS["card"], padx=20, pady=20, highlightthickness=1, highlightbackground="#334155")
-        card.grid(row=0, column=col, padx=10, sticky="nsew")
-        tk.Label(card, text=label, font=("Inter", 9, "bold"), fg=COLORS["muted"], bg=COLORS["card"]).pack(anchor="w")
-        tk.Label(card, text=value, font=("Inter", 24, "bold"), fg=COLORS["accent"], bg=COLORS["card"]).pack(anchor="w")
+        create_stat(stats_frame, "TOTAL PRODUTOS", len(self.state.get("products", [])), COLORS["accent"])
+        create_stat(stats_frame, "FUNCIONÁRIOS", len(self.state.get("employees", [])), COLORS["text"])
+        create_stat(stats_frame, "SAÍDAS (TUDO)", len(self.state.get("transactions", [])), COLORS["success"])
 
     def show_inventory(self):
         self.clear_content()
         header = tk.Frame(self.content, bg=COLORS["bg"])
-        header.pack(fill="x", pady=(0, 10))
-        tk.Label(header, text="Estoque", font=("Inter", 18, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(side="left")
-        tk.Button(header, text="+ NOVO MATERIAL", command=self.add_product_modal, bg=COLORS["accent"], fg="white", font=("Inter", 10, "bold"), bd=0, padx=15, pady=5).pack(side="right")
+        header.pack(fill="x", pady=(0, 20))
         
-        columns = ("id", "name", "cat", "qty")
-        self.tree = ttk.Treeview(self.content, columns=columns, show="headings", height=15)
-        self.tree.heading("id", text="ID")
-        self.tree.heading("name", text="PRODUTO")
-        self.tree.heading("cat", text="CATEGORIA")
-        self.tree.heading("qty", text="QTD")
+        tk.Label(header, text="Estoque de Materiais", font=("Inter", 18, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(side="left")
+        tk.Button(header, text="+ NOVO MATERIAL", command=lambda: self.show_modal("add"), bg=COLORS["accent"], fg="white", font=("Inter", 9, "bold"), bd=0, padx=15, pady=8).pack(side="right")
         
-        self.tree.column("id", width=150)
-        self.tree.column("name", width=300)
-        self.tree.column("cat", width=150)
-        self.tree.column("qty", width=100)
+        # Search Bar
+        search_frame = tk.Frame(self.content, bg=COLORS["card"], padx=15, pady=10, highlightthickness=1, highlightbackground=COLORS["border"])
+        search_frame.pack(fill="x", pady=(0, 20))
+        tk.Label(search_frame, text="Buscar:", font=("Inter", 9, "bold"), fg=COLORS["text_muted"], bg=COLORS["card"]).pack(side="left", padx=(0, 10))
         
-        self.tree.pack(fill="both", expand=True)
-        self.refresh_inventory_list()
+        self.search_var = tk.StringVar()
+        search_entry = tk.Entry(search_frame, textvariable=self.search_var, font=("Inter", 10), bd=0, bg=COLORS["card"], fg=COLORS["text"], insertbackground=COLORS["text"])
+        search_entry.pack(side="left", fill="x", expand=True)
+        self.search_var.trace_add("write", lambda *args: self.refresh_inventory_table())
 
-    def refresh_inventory_list(self):
-        for i in self.tree.get_children(): self.tree.delete(i)
-        for p in self.state["products"]:
-            self.tree.insert("", "end", values=(p.get('id'), p.get('name'), p.get('category'), p.get('quantity')))
+        self.tree_frame = tk.Frame(self.content, bg=COLORS["card"], highlightthickness=1, highlightbackground=COLORS["border"])
+        self.tree_frame.pack(fill="both", expand=True)
+        
+        self.tree = ttk.Treeview(self.tree_frame, columns=("Nome", "Categoria", "Qtd"), show="headings", height=15)
+        self.tree.heading("Nome", text="MATERIAL")
+        self.tree.heading("Categoria", text="CATEGORIA")
+        self.tree.heading("Qtd", text="SALDO")
+        self.tree.column("Qtd", width=100, anchor="center")
+        self.tree.pack(side="left", fill="both", expand=True)
+        
+        sb = ttk.Scrollbar(self.tree_frame, orient="vertical", command=self.tree.yview)
+        sb.pack(side="right", fill="y")
+        self.tree.configure(yscrollcommand=sb.set)
+        
+        self.refresh_inventory_table()
+
+    def refresh_inventory_table(self):
+        for item in self.tree.get_children(): self.tree.delete(item)
+        query = self.search_var.get().lower() if hasattr(self, 'search_var') else ""
+        
+        for p in self.state.get("products", []):
+            if query in p["name"].lower() or query in p["category"].lower():
+                self.tree.insert("", "end", values=(p["name"], p["category"], f"{p['quantity']} unid."))
 
     def show_employees(self):
         self.clear_content()
-        tk.Label(self.content, text="Gerenciar Funcionários", font=("Inter", 18, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(anchor="w", pady=(0, 10))
+        header = tk.Frame(self.content, bg=COLORS["bg"])
+        header.pack(fill="x", pady=(0, 20))
         
-        columns = ("id", "name", "role")
-        self.emp_tree = ttk.Treeview(self.content, columns=columns, show="headings", height=15)
-        self.emp_tree.heading("id", text="ID")
-        self.emp_tree.heading("name", text="NOME")
-        self.emp_tree.heading("role", text="CARGO")
-        self.emp_tree.pack(fill="both", expand=True)
+        tk.Label(header, text="Gestão de Funcionários", font=("Inter", 18, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(side="left")
+        tk.Button(header, text="+ NOVO FUNCIONÁRIO", command=lambda: self.show_modal("employee"), bg=COLORS["accent"], fg="white", font=("Inter", 9, "bold"), bd=0, padx=15, pady=8).pack(side="right")
         
-        for e in self.state["employees"]:
-            self.emp_tree.insert("", "end", values=(e.get('id'), e.get('name'), e.get('role')))
+        self.emp_list_frame = tk.Frame(self.content, bg=COLORS["bg"])
+        self.emp_list_frame.pack(fill="both", expand=True)
+        self.refresh_employees()
+
+    def refresh_employees(self):
+        for widget in self.emp_list_frame.winfo_children(): widget.destroy()
+        for e in self.state.get("employees", []):
+            f = tk.Frame(self.emp_list_frame, bg=COLORS["card"], padx=20, pady=15, highlightthickness=1, highlightbackground=COLORS["border"])
+            f.pack(fill="x", pady=5)
+            tk.Label(f, text=e["name"], font=("Inter", 11, "bold"), fg=COLORS["text"], bg=COLORS["card"]).pack(side="left")
+            tk.Label(f, text=f"•  {e.get('role', 'Geral')}", font=("Inter", 10), fg=COLORS["text_muted"], bg=COLORS["card"]).pack(side="left", padx=20)
+            tk.Button(f, text="REMOVER", command=lambda id=e["id"]: self.delete_employee(id), bg=COLORS["bg"], fg=COLORS["error"], font=("Inter", 8, "bold"), bd=0, padx=10).pack(side="right")
 
     def show_history(self):
         self.clear_content()
-        tk.Label(self.content, text="Histórico de Saídas", font=("Inter", 18, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(anchor="w", pady=(0, 10))
+        tk.Label(self.content, text="Histórico de Movimentações", font=("Inter", 20, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(anchor="w", pady=(0, 30))
         
-        columns = ("date", "emp", "prod", "qty")
-        self.tx_tree = ttk.Treeview(self.content, columns=columns, show="headings", height=15)
-        self.tx_tree.heading("date", text="DATA/HORA")
-        self.tx_tree.heading("emp", text="FUNCIONÁRIO")
-        self.tx_tree.heading("prod", text="MATERIAL")
-        self.tx_tree.heading("qty", text="QTD")
-        self.tx_tree.pack(fill="both", expand=True)
+        tree_frame = tk.Frame(self.content, bg=COLORS["card"], highlightthickness=1, highlightbackground=COLORS["border"])
+        tree_frame.pack(fill="both", expand=True)
         
-        for t in reversed(self.state["transactions"][-50:]):
-            dt = datetime.fromtimestamp(t.get('timestamp', 0)/1000).strftime('%d/%m/%Y %H:%M')
-            self.tx_tree.insert("", "end", values=(dt, t.get('employeeName'), t.get('productName'), t.get('quantity')))
+        self.hist_tree = ttk.Treeview(tree_frame, columns=("Data", "Func", "Prod", "Qtd"), show="headings", height=15)
+        self.hist_tree.heading("Data", text="DATA/HORA")
+        self.hist_tree.heading("Func", text="FUNCIONÁRIO")
+        self.hist_tree.heading("Prod", text="MATERIAL")
+        self.hist_tree.heading("Qtd", text="QT")
+        
+        self.hist_tree.column("Data", width=150)
+        self.hist_tree.column("Qtd", width=50, anchor="center")
+        self.hist_tree.pack(side="left", fill="both", expand=True)
+        
+        sb = ttk.Scrollbar(tree_frame, orient="vertical", command=self.hist_tree.yview)
+        sb.pack(side="right", fill="y")
+        self.hist_tree.configure(yscrollcommand=sb.set)
+        
+        for t in sorted(self.state.get("transactions", []), key=lambda x: x.get("timestamp", 0), reverse=True):
+            dt = time.strftime('%d/%m %H:%M', time.localtime(t.get("timestamp", 0)/1000))
+            self.hist_tree.insert("", "end", values=(dt, t.get("employeeName"), t.get("productName"), t.get("quantity")))
+
+    def show_withdraw(self):
+        self.clear_content()
+        tk.Label(self.content, text="Registrar Saída de Material", font=("Inter", 20, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(anchor="w", pady=(0, 30))
+        
+        card = tk.Frame(self.content, bg=COLORS["card"], padx=30, pady=30, highlightthickness=1, highlightbackground=COLORS["border"])
+        card.pack(fill="x")
+        
+        tk.Label(card, text="FUNCIONÁRIO", font=("Inter", 9, "bold"), fg=COLORS["text_muted"], bg=COLORS["card"]).pack(anchor="w")
+        emp_var = tk.StringVar()
+        emp_opt = ttk.Combobox(card, textvariable=emp_var, font=("Inter", 11), state="readonly")
+        emp_opt['values'] = [e["name"] for e in self.state.get("employees", [])]
+        emp_opt.pack(fill="x", pady=(5, 20))
+        
+        tk.Label(card, text="MATERIAL / PRODUTO", font=("Inter", 9, "bold"), fg=COLORS["text_muted"], bg=COLORS["card"]).pack(anchor="w")
+        prod_var = tk.StringVar()
+        prod_opt = ttk.Combobox(card, textvariable=prod_var, font=("Inter", 11), state="readonly")
+        prod_opt['values'] = [f"{p['name']} (Saldo: {p['quantity']})" for p in self.state.get("products", [])]
+        prod_opt.pack(fill="x", pady=(5, 20))
+        
+        tk.Label(card, text="QUANTIDADE", font=("Inter", 9, "bold"), fg=COLORS["text_muted"], bg=COLORS["card"]).pack(anchor="w")
+        qty_entry = tk.Entry(card, font=("Inter", 11), bd=0, bg=COLORS["bg"], fg=COLORS["text"], highlightthickness=1, highlightbackground=COLORS["border"])
+        qty_entry.pack(fill="x", pady=(5, 30), ipady=8)
+        qty_entry.insert(0, "1")
+        
+        def confirm():
+            e_name = emp_var.get()
+            p_val = prod_var.get()
+            q_val = qty_entry.get()
+            if not e_name or not p_val or not q_val.isdigit():
+                messagebox.showerror("Erro", "Preencha todos os campos corretamente!")
+                return
+            
+            p_name = p_val.split(" (Saldo:")[0]
+            product = next((p for p in self.state["products"] if p["name"] == p_name), None)
+            qty = int(q_val)
+            
+            if product and product["quantity"] >= qty:
+                fb_request(f"products/{product['id']}", "PATCH", {"quantity": product["quantity"] - qty})
+                fb_request("transactions", "POST", {
+                    "employeeName": e_name,
+                    "productName": p_name,
+                    "quantity": qty,
+                    "timestamp": int(time.time() * 1000)
+                })
+                messagebox.showinfo("Sucesso", "Saída registrada com sucesso!")
+                self.show_dashboard()
+            else:
+                messagebox.showerror("Erro", "Estoque insuficiente!")
+
+        tk.Button(card, text="CONFIRMAR RETIRADA", command=confirm, bg=COLORS["accent"], fg="white", font=("Inter", 10, "bold"), bd=0, pady=12, cursor="hand2").pack(fill="x")
 
     def show_audit(self):
         self.clear_content()
-        tk.Label(self.content, text="Ferramentas & Auditoria", font=("Inter", 18, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(anchor="w", pady=(0, 20))
+        tk.Label(self.content, text="Ferramentas & Auditoria", font=("Inter", 20, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(anchor="w", pady=(0, 30))
+        
+        container = tk.Frame(self.content, bg=COLORS["bg"])
+        container.pack(fill="both", expand=True)
         
         tools = [
             ("Mapear Maior Retirada", self.audit_biggest),
@@ -198,61 +327,50 @@ class AlmoxarifadoApp(tk.Tk):
         ]
         
         for name, cmd in tools:
-            tk.Button(self.content, text=name, command=cmd, font=("Inter", 11), bg="#334155", fg="white", bd=0, padx=20, pady=12, width=35, anchor="w", cursor="hand2").pack(pady=5)
-
-    def show_admin(self):
-        self.clear_content()
-        tk.Label(self.content, text="Configurações do Sistema", font=("Inter", 18, "bold"), fg=COLORS["text"], bg=COLORS["bg"]).pack(anchor="w", pady=(0, 20))
-        
-        # Maintenance Toggle
-        m_frame = tk.Frame(self.content, bg=COLORS["card"], padx=20, pady=15, highlightthickness=1, highlightbackground="#334155")
-        m_frame.pack(fill="x", pady=5)
-        
-        tk.Label(m_frame, text="MODO MANUTENÇÃO (SITE)", font=("Inter", 11, "bold"), fg="white", bg=COLORS["card"]).pack(side="left")
-        
-        m_state = self.state.get("settings", {}).get("maintenanceMode", False)
-        btn_text = "DESATIVAR" if m_state else "ATIVAR"
-        btn_bg = COLORS["error"] if m_state else COLORS["success"]
-        
-        def toggle_m():
-            new_state = not m_state
-            fb_request("settings", "PATCH", {"maintenanceMode": new_state})
-            if "settings" not in self.state: self.state["settings"] = {}
-            self.state["settings"]["maintenanceMode"] = new_state # Update local state immediately
-            messagebox.showinfo("Sucesso", f"Modo Manutenção {'Ativado' if new_state else 'Desativado'}!")
-            self.show_admin()
-
-        tk.Button(m_frame, text=btn_text, command=toggle_m, bg=btn_bg, fg="white", bd=0, padx=15, pady=5, font=("Inter", 9, "bold")).pack(side="right")
-
-        tk.Button(self.content, text="FAZER BACKUP COMPLETO (JSON)", command=self.backup_db, bg=COLORS["warning"], fg="white", font=("Inter", 11, "bold"), bd=0, padx=20, pady=12, width=35, anchor="w").pack(pady=(20, 5))
-        tk.Button(self.content, text="RESETAR TODO O SISTEMA", command=self.full_reset, bg=COLORS["error"], fg="white", font=("Inter", 11, "bold"), bd=0, padx=20, pady=12, width=35, anchor="w").pack(pady=5)
+            f = tk.Frame(container, bg=COLORS["card"], padx=20, pady=10, highlightthickness=1, highlightbackground=COLORS["border"])
+            f.pack(fill="x", pady=5)
+            tk.Label(f, text=name, font=("Inter", 11, "bold"), fg=COLORS["text"], bg=COLORS["card"]).pack(side="left")
+            tk.Button(f, text="EXECUTAR", command=cmd, bg=COLORS["bg"], fg=COLORS["accent"], font=("Inter", 8, "bold"), bd=0, padx=15).pack(side="right")
 
     # --- MODAIS E AÇÕES ---
-    def add_product_modal(self):
+    def show_modal(self, type):
         modal = tk.Toplevel(self)
-        modal.title("Novo Material")
-        modal.geometry("400x350")
+        modal.title("Novo Registro")
+        modal.geometry("400x450")
         modal.configure(bg=COLORS["bg"])
         
-        tk.Label(modal, text="Adicionar Material", font=("Inter", 14, "bold"), fg="white", bg=COLORS["bg"]).pack(pady=20)
+        container = tk.Frame(modal, bg=COLORS["card"], padx=30, pady=30, highlightthickness=1, highlightbackground=COLORS["border"])
+        container.pack(expand=True, fill="both", padx=20, pady=20)
         
-        tk.Label(modal, text="Nome:", fg=COLORS["muted"], bg=COLORS["bg"]).pack(anchor="w", padx=40)
-        name_e = tk.Entry(modal, bg="#334155", fg="white", bd=0); name_e.pack(fill="x", padx=40, pady=5, ipady=5)
+        title = "Novo Material" if type == "add" else "Novo Funcionário"
+        tk.Label(container, text=title.upper(), font=("Inter", 12, "bold"), fg=COLORS["accent"], bg=COLORS["card"]).pack(pady=(0, 20))
         
-        tk.Label(modal, text="Qtd Inicial:", fg=COLORS["muted"], bg=COLORS["bg"]).pack(anchor="w", padx=40)
-        qty_e = tk.Entry(modal, bg="#334155", fg="white", bd=0); qty_e.pack(fill="x", padx=40, pady=5, ipady=5)
-        
-        tk.Label(modal, text="Categoria:", fg=COLORS["muted"], bg=COLORS["bg"]).pack(anchor="w", padx=40)
-        cat_e = tk.Entry(modal, bg="#334155", fg="white", bd=0); cat_e.pack(fill="x", padx=40, pady=5, ipady=5)
-        
+        def create_field(label):
+            tk.Label(container, text=label, font=("Inter", 8, "bold"), fg=COLORS["text_muted"], bg=COLORS["card"]).pack(anchor="w", pady=(10, 2))
+            entry = tk.Entry(container, font=("Inter", 10), bd=0, bg=COLORS["bg"], fg=COLORS["text"], highlightthickness=1, highlightbackground=COLORS["border"])
+            entry.pack(fill="x", ipady=6)
+            return entry
+
+        if type == "add":
+            n_e = create_field("NOME DO MATERIAL")
+            c_e = create_field("CATEGORIA")
+            q_e = create_field("QUANTIDADE")
+        else:
+            n_e = create_field("NOME COMPLETO")
+            r_e = create_field("CARGO / SETOR")
+
         def save():
-            n, q, c = name_e.get(), qty_e.get(), cat_e.get()
-            if n and q.isdigit():
-                fb_request("products", "POST", {"name": n, "quantity": int(q), "category": c})
-                modal.destroy()
-                messagebox.showinfo("Sucesso", "Produto adicionado!")
-        
-        tk.Button(modal, text="SALVAR", command=save, bg=COLORS["accent"], fg="white", bd=0, pady=10).pack(fill="x", padx=40, pady=20)
+            if type == "add":
+                if n_e.get() and q_e.get().isdigit():
+                    fb_request("products", "POST", {"name": n_e.get(), "category": c_e.get(), "quantity": int(q_e.get())})
+                    self.show_inventory()
+            else:
+                if n_e.get():
+                    fb_request("employees", "POST", {"name": n_e.get(), "role": r_e.get() or "Geral"})
+                    self.show_employees()
+            modal.destroy()
+
+        tk.Button(container, text="SALVAR DADOS", command=save, bg=COLORS["accent"], fg="white", font=("Inter", 10, "bold"), bd=0, pady=10).pack(fill="x", pady=(30, 0))
 
     # --- SYNC ENGINE ---
     def start_sync(self):

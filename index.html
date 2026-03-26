@@ -190,13 +190,13 @@
         /* Hammer strike animation */
         .hammer-animate { 
             animation: strike 0.8s infinite; 
-            transform-origin: bottom right;
+            transform-origin: bottom left;
         }
         @keyframes strike {
             0% { transform: rotate(0deg); }
-            15% { transform: rotate(-45deg); }
-            25% { transform: rotate(15deg); }
-            35% { transform: rotate(0deg); }
+            15% { transform: rotate(-35deg); } /* Pull back */
+            25% { transform: rotate(45deg); }  /* Hit */
+            35% { transform: rotate(0deg); }   /* Return */
             100% { transform: rotate(0deg); }
         }
     </style>
