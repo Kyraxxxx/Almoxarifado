@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metal Print - Almoxarifado Profissional</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase SDKs (Compatibility Mode) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics-compat.js"></script>
+    
+    <!-- jsPDF & AutoTable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #0f172a; /* Azul Marinho Profissional */
+            --accent: #2563eb;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --sidebar-bg: #ffffff;
+            --radius: 12px;
+            --error: #ef4444;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-main); color: var(--text-main); height: 100vh; overflow: hidden; }
+        #app { display: flex; height: 100vh; }
+
+        /* Sidebar Profissional Branca */
+        .sidebar { width: 260px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 1.5rem; z-index: 10; }
+        .logo { padding-bottom: 2.5rem; font-size: 1.35rem; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
+        .logo span { color: var(--accent); }
+        
+        .nav-links { list-style: none; flex-grow: 1; }
+        .nav-links li { 
+            display: flex; align-items: center; gap: 0.75rem; 
+            padding: 0.8rem 1rem; margin-bottom: 0.4rem; 
+            border-radius: var(--radius); color: var(--text-muted); 
+            cursor: pointer; transition: all 0.2s ease; 
+            font-weight: 500; font-size: 0.95rem;
+        }
+        .nav-links li:hover { background: #f1f5f9; color: var(--text-main); }
+        .nav-links li.active { background: var(--primary); color: white; box-shadow: var(--shadow); }
+
+        /* Content Area */
+        .content { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; }
+        .top-bar { height: 75px; background: white; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; position: sticky; top: 0; z-index: 5; }
+        
+        .btn { 
+            display: flex; align-items: center; gap: 0.5rem; 
+            padding: 0.65rem 1.25rem; border-radius: 8px; 
+            font-weight: 600; font-size: 0.875rem; 
+            cursor: pointer; border: none; transition: 0.2s; 
+        }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-secondary { background: #f1f5f9; color: var(--text-main); }
+
+        /* Cards & Display */
+        .page-container { padding: 2rem; }
+        .dashboard-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { 
+            background: white; padding: 1.75rem; border-radius: var(--radius); 
+            border: 1px solid var(--border); box-shadow: var(--shadow);
+            position: relative;
+        }
+        .stat-card h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 0.75rem; }
+        .stat-card .value { font-size: 2.2rem; font-weight: 700; color: var(--primary); }
+
+        /* Tables */
+        .data-table-wrapper { background: white; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow); }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { text-align: left; padding: 1rem 1.25rem; background-color: #f8fafc; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; border-bottom: 1px solid var(--border); }
+        .data-table td { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .data-table tr:hover { background-color: #f8fafc; }
+
+        .stock-badge { padding: 0.35rem 0.65rem; border-radius: 6px; font-weight: 600; font-size: 0.75rem; background: #dcfce7; color: #166534; }
+        .stock-badge.low { background: #fee2e2; color: #991b1b; }
+
+        /* Modal Clean */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.5); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; visibility: hidden; transition: 0.2s; }
+        .modal-overlay.open { opacity: 1; visibility: visible; }
+        .modal { background: white; width: 90%; max-width: 500px; border-radius: var(--radius); padding: 2rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .modal h2 { margin-bottom: 1.5rem; font-size: 1.25rem; color: var(--primary); }
+        .form-group label { display: block; font-size: 0.875rem; margin-bottom: 0.5rem; font-weight: 600; }
+        .form-group input, .form-group select { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
+
+        /* User Identity Area */
+        .user-profile { margin-top: auto; padding-top: 1.25rem; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem; }
+        .avatar { 
+            width: 48px; height: 48px; 
+            background: #f1f5f9; 
+            border: 1px solid var(--border);
+            border-radius: 10px; 
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+        .footer {
+            padding: 0.75rem;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.65rem;
+            background: white;
+            margin-top: auto;
+        }
+
+        /* Toasts Custom */
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1000; }
+        .toast { 
+            background: white; padding: 1rem 1.5rem; border-radius: 8px; 
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); 
+            border-left: 4px solid var(--accent); 
+            margin-bottom: 10px; font-size: 0.875rem; font-weight: 600;
+            display: flex; align-items: center; gap: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+        .toast.error { border-left-color: var(--error); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        /* Responsive Design: 100% Adaptive UI */
+        @media (min-width: 769px) {
+            .mobile-user-info { display: none; }
+            .sidebar { width: 260px; height: 100vh; display: flex; flex-direction: column; padding: 2rem 1rem; border-right: 1px solid var(--border); }
+            .content { flex: 1; height: 100vh; overflow-y: auto; }
+        }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .sidebar { 
+                position: fixed; bottom: 0; left: 0; right: 0; 
+                width: 100%; height: 75px; 
+                flex-direction: row; padding: 0.5rem; 
+                border-top: 2px solid var(--border); 
+                background: white; z-index: 100;
+            }
+            .sidebar .logo, .sidebar .user-profile { display: none; }
+            
+            .nav-links { display: flex; width: 100%; justify-content: space-around; align-items: center; }
+            .nav-links li { 
+                flex-direction: column; font-size: 10px; 
+                padding: 8px 0; gap: 4px; margin: 0; 
+                width: 25%; text-align: center; border-radius: 0;
+            }
+            .nav-links li.active { background: transparent; color: var(--accent); box-shadow: none; border-top: 3px solid var(--accent); border-radius: 0; }
+            .nav-links li i { width: 20px; height: 20px; }
+
+            .top-bar { 
+                height: 70px; padding: 0 1rem; 
+                position: fixed; top: 0; left: 0; right: 0; width: 100%;
+            }
+            .content { padding-top: 70px; padding-bottom: 80px; height: 100vh; overflow-y: auto; }
+            .page-container { padding: 1rem; }
+            .dashboard-stats { grid-template-columns: 1fr; gap: 1rem; }
+            .stat-card { padding: 1.25rem; }
+            .stat-card .value { font-size: 1.8rem; }
+            
+            .desktop-only { display: none; }
+            .mobile-user-info { display: flex; align-items: center; gap: 0.5rem; }
+            .top-bar .btn { padding: 0.5rem; }
+            .top-bar .btn span { display: none !important; } /* Hide text on mobile button */
+        }
+        /* Maintenance Overlay */
+        #maintenance-screen {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--primary); color: white;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; z-index: 9999; padding: 2rem;
+        }
+        #maintenance-screen h1 { font-size: 2.5rem; margin-bottom: 1.5rem; color: var(--accent); }
+        #maintenance-screen p { font-size: 1.2rem; max-width: 600px; line-height: 1.6; opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div id="maintenance-screen">
+        <i data-lucide="hammer" style="width: 64px; height: 64px; margin-bottom: 2rem; color: var(--accent)"></i>
+        <h1>Site em Manutenção</h1>
+        <p>Sendo Desenvolvido Por: <strong>Jonas</strong></p>
+        <p style="margin-top: 1rem;">Aguarde enquanto o site volta para o Público.<br>Metal Print agradece!</p>
+    </div>
+    <div id="app">
+        <nav class="sidebar">
+            <div class="logo">Metal <span>Print</span></div>
+            <ul class="nav-links">
+                <li class="active" data-page="dashboard"><i data-lucide="layout-dashboard"></i> Dashboard</li>
+                <li data-page="inventory"><i data-lucide="package"></i> Estoque</li>
+                <li data-page="withdraw"><i data-lucide="minus-square"></i> Saídas</li>
+                <li data-page="employees"><i data-lucide="users"></i> Funcionários</li>
+                <li data-page="reports"><i data-lucide="file-text"></i> Relatórios</li>
+            </ul>
+            <div class="user-profile">
+                <div class="avatar">
+                    <img src="logo.png" onerror="this.src='https://ui-avatars.com/api/?name=Metal+Print&background=0f172a&color=fff'">
+                </div>
+                <div class="user-info">
+                    <p style="font-weight:700; font-size:13px; color:var(--primary)">Almoxarifado</p>
+                    <p style="color:var(--text-muted); font-size:11px">Acesso Master</p>
+                </div>
+            </div>
+        </nav>
+
+        <main class="content">
+            <div class="toast-container" id="toast-container"></div>
+            <header class="top-bar">
+                <div class="mobile-user-info" style="display:none">
+                    <div class="avatar" style="width:35px; height:35px">
+                        <img src="logo.png" onerror="this.src='https://ui-avatars.com/api/?name=Metal+Print&background=0f172a&color=fff'">
+                    </div>
+                    <span style="font-weight:700; color:var(--primary); font-size:0.9rem">METAL PRINT</span>
+                </div>
+                <h1 class="desktop-only" style="font-size: 1.25rem; font-weight: 700;">Painel de Controle</h1>
+                <div style="display:flex; align-items:center; gap:0.75rem">
+                    <button class="btn btn-primary" id="add-product-btn" onclick="showModal('add')">
+                        <i data-lucide="plus-circle"></i> <span>Novo Material</span>
+                    </button>
+                    <div class="desktop-only" style="display:flex; align-items:center; gap:0.75rem; border-left:1px solid var(--border); padding-left:1rem; margin-left:0.5rem">
+                        <div style="text-align:right">
+                            <div style="font-size:0.85rem; font-weight:700">Responsável</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted)">Almoxarifado</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <section id="page-content" class="page-container">
+                 <div class="loading-state" style="text-align:center; padding: 100px;">
+                    <p style="color: var(--text-muted);">Sincronizando dados...</p>
+                 </div>
+            </section>
+
+            <footer class="footer">
+                Todos os Direitos Reservados para <b>Metal Print ® 2026</b><br>
+                Desenvolvido por <b>Jonas Luis</b>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        // --- FIREBASE CONFIG ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBDvnnPjIhsAl13182eTTLplVGOR6Q0sGs",
+            authDomain: "almoxarifado-dacbe.firebaseapp.com",
+            databaseURL: "https://almoxarifado-dacbe-default-rtdb.firebaseio.com",
+            projectId: "almoxarifado-dacbe",
+            storageBucket: "almoxarifado-dacbe.firebasestorage.app",
+            messagingSenderId: "399062717065",
+            appId: "1:399062717065:web:0c994562a4b64e5e7bec58"
+        };
+
+        let db;
+        const state = { currentPage: 'dashboard', products: [], transactions: [], employees: [] };
+
+        window.addEventListener('load', initSystem);
+
+        async function initSystem() {
+            try {
+                if (typeof firebase === 'undefined') return;
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+                
+                initRealtimeSync();
+                initNavigation();
+                
+                document.getElementById('add-product-btn').onclick = () => showModal('add');
+                updateUI();
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            } catch (e) { console.error(e); }
+        }
+
+        function initRealtimeSync() {
+            db.ref("products").on("value", snap => {
+                const data = snap.val() || {};
+                state.products = Object.keys(data).map(id => ({ id, ...data[id] }));
+                updateUI();
+            });
+            db.ref("employees").on("value", snap => {
+                const data = snap.val() || {};
+                state.employees = Object.keys(data).map(id => ({ id, ...data[id] }));
+                updateUI();
+            });
+            db.ref("transactions").limitToLast(20).on("value", snap => {
+                const data = snap.val() || {};
+                state.transactions = Object.keys(data).map(id => ({ id, ...data[id] }))
+                    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                updateUI();
+            });
+            db.ref("settings/maintenanceMode").on("value", snap => {
+                const isMaintenance = snap.val() === true;
+                const screen = document.getElementById("maintenance-screen");
+                if (screen) screen.style.display = isMaintenance ? "flex" : "none";
+            });
+        }
+
+        function updateUI() {
+            // Mobile adjust: show logo in top bar if mobile
+            const isMobile = window.innerWidth <= 768;
+            const mobileUserInfo = document.querySelector('.mobile-user-info');
+            const desktopOnly = document.querySelectorAll('.desktop-only');
+            
+            if (mobileUserInfo) mobileUserInfo.style.display = isMobile ? 'flex' : 'none';
+            desktopOnly.forEach(el => el.style.display = isMobile ? 'none' : 'flex');
+
+            // Mostrar botão "Novo Material" apenas na página de Estoque
+            const addBtn = document.getElementById('add-product-btn');
+            if (addBtn) addBtn.style.display = (state.currentPage === 'inventory') ? 'flex' : 'none';
+
+            if (state.currentPage === 'dashboard') renderDashboard();
+            else if (state.currentPage === 'inventory') renderInventory();
+            else if (state.currentPage === 'employees') renderEmployees();
+            else if (state.currentPage === 'reports') renderReports();
+            
+            // Atualizar classe 'active' nos links
+            document.querySelectorAll('.nav-links li').forEach(li => {
+                li.classList.toggle('active', li.dataset.page === state.currentPage);
+            });
+
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function renderDashboard() {
+            const content = document.getElementById('page-content');
+            content.innerHTML = `
+                <div class="dashboard-stats">
+                    <div class="stat-card"><h3>Estoque Total</h3><p class="value">${state.products.length}</p></div>
+                    <div class="stat-card"><h3>Saídas Hoje</h3><p class="value">${state.transactions.filter(t => isToday(t.timestamp)).length}</p></div>
+                </div>
+                
+                <h2 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--primary)">Movimentações Recentes</h2>
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead><tr><th>Funcionário</th><th>Material</th><th>Qtd</th><th>Data</th></tr></thead>
+                        <tbody>
+                            ${state.transactions.map(t => `
+                                <tr>
+                                    <td><strong>${t.employeeName}</strong></td>
+                                    <td>${t.productName}</td>
+                                    <td>${t.quantity}</td>
+                                    <td style="color:var(--text-muted); font-size:12px">${formatDate(t.timestamp)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderInventory() {
+            const content = document.getElementById('page-content');
+            content.innerHTML = `
+                <h2 style="font-size: 1.1rem; margin-bottom: 1.25rem; color: var(--primary)">Controle de Estoque</h2>
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead><tr><th>Produto</th><th>Categoria</th><th>Estoque</th><th style="text-align:right">Ações</th></tr></thead>
+                        <tbody>
+                            ${state.products.map(p => `
+                                <tr>
+                                    <td><strong>${p.name}</strong></td>
+                                    <td>${p.category}</td>
+                                    <td><span class="stock-badge ${p.quantity < 5 ? 'low' : ''}">${p.quantity} unid.</span></td>
+                                    <td style="text-align:right">
+                                        <button class="btn btn-sm" onclick="deleteProduct('${p.id}')" style="padding:5px; background:none; color:var(--text-muted)"><i data-lucide="trash-2"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderEmployees() {
+            const content = document.getElementById('page-content');
+            content.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem">
+                    <h2 style="font-size: 1.1rem; color: var(--primary)">Funcionários</h2>
+                    <button class="btn btn-primary" onclick="showModal('employee')">Novo Funcionário</button>
+                </div>
+                <div class="data-table-wrapper">
+                    <table class="data-table">
+                        <thead><tr><th>Nome</th><th>Setor</th><th style="text-align:right">Ações</th></tr></thead>
+                        <tbody>
+                            ${state.employees.map(e => `
+                                <tr>
+                                    <td><strong>${e.name}</strong></td>
+                                    <td>${e.role || '-'}</td>
+                                    <td style="text-align:right">
+                                        <button class="btn btn-sm" onclick="deleteEmployee('${e.id}')" style="padding:5px; background:none; color:var(--text-muted)"><i data-lucide="trash-2"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderReports() {
+            const content = document.getElementById('page-content');
+            content.innerHTML = `
+                <h2 style="font-size: 1.1rem; color: var(--primary); margin-bottom:1.25rem">Relatórios de Saída</h2>
+                <div style="background: white; padding: 3rem; border-radius: 12px; text-align: center; border: 1px solid var(--border);">
+                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Gerar resumo completo de movimentações em PDF.</p>
+                    <button class="btn btn-primary" onclick="generatePDF()" style="margin: 0 auto">Exportar PDF</button>
+                </div>
+            `;
+        }
+
+        function isToday(ts) { 
+            if (!ts) return false; 
+            const d = new Date(ts); 
+            return d.toDateString() === new Date().toDateString(); 
+        }
+        function formatDate(ts) { 
+            if (!ts) return '...'; 
+            return new Date(ts).toLocaleString('pt-BR'); 
+        }
+
+        function initNavigation() {
+            document.querySelectorAll('.nav-links li').forEach(li => {
+                li.onclick = () => {
+                    document.querySelectorAll('.nav-links li').forEach(l => l.classList.remove('active'));
+                    li.classList.add('active');
+                    state.currentPage = li.dataset.page;
+                    if (state.currentPage === 'withdraw') showModal('withdraw');
+                    else updateUI();
+                };
+            });
+        }
+
+        // --- NOTIFICAÇÕES CUSTOM ---
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerText = msg;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function showConfirmCustom(msg, callback) {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay open';
+            overlay.innerHTML = `
+                <div class="modal" style="max-width:350px; text-align:center">
+                    <h2 style="font-size:1.1rem">${msg}</h2>
+                    <div style="display:flex; justify-content:center; gap:10px; margin-top:1.5rem">
+                        <button class="btn btn-secondary" id="confirm-no">Cancelar</button>
+                        <button class="btn btn-primary" id="confirm-yes" style="background:var(--error)">Confirmar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            document.getElementById('confirm-no').onclick = () => overlay.remove();
+            document.getElementById('confirm-yes').onclick = () => {
+                callback();
+                overlay.remove();
+            };
+        }
+
+        async function deleteProduct(id) {
+            showConfirmCustom("Apagar este material?", async () => {
+                await db.ref("products").child(id).remove();
+                showToast("Material removido.");
+            });
+        }
+
+        async function deleteEmployee(id) {
+            showConfirmCustom("Apagar este funcionário?", async () => {
+                await db.ref("employees").child(id).remove();
+                showToast("Funcionário removido.");
+            });
+        }
+
+        function showModal(type) {
+            let title = type === 'add' ? 'Novo Material' : (type === 'withdraw' ? 'Registrar Saída' : 'Novo Funcionário');
+            let body = '';
+            if (type === 'add') {
+                body = `<div class="form-group"><label>Nome</label><input type="text" id="p-name" placeholder="Ex: Lona 440g"></div>
+                        <div class="form-group"><label>Qtd Inicial</label><input type="number" id="p-qty" value="0"></div>
+                        <div class="form-group"><label>Categoria</label><input type="text" id="p-cat" placeholder="Ex: Impressão, Recorte..."></div>`;
+            } else if (type === 'withdraw') {
+                if (state.employees.length === 0) {
+                    showToast("Cadastre um Funcionário primeiro!", "error");
+                    return;
+                }
+                body = `<div class="form-group"><label>Funcionário</label><select id="t-emp">${state.employees.map(e => `<option>${e.name}</option>`).join('')}</select></div>
+                        <div class="form-group"><label>Material</label><select id="t-prod">${state.products.map(p => `<option value="${p.id}">${p.name} (Saldo: ${p.quantity})</option>`).join('')}</select></div>
+                        <div class="form-group"><label>Quantidade</label><input type="number" id="t-qty" value="1" min="1"></div>`;
+            } else if (type === 'employee') {
+                body = `<div class="form-group"><label>Nome</label><input type="text" id="e-name"></div>
+                        <div class="form-group"><label>Cargo</label><input type="text" id="e-role"></div>`;
+            }
+
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay open';
+            overlay.innerHTML = `<div class="modal"><h2>${title}</h2>${body}
+                <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:2rem">
+                    <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+                    <button class="btn btn-primary" id="save-btn">Confirmar</button>
+                </div></div>`;
+            document.body.appendChild(overlay);
+
+            document.getElementById('save-btn').onclick = async () => {
+                try {
+                    let shouldClose = true;
+                    if (type === 'add') {
+                        const name = document.getElementById('p-name').value;
+                        const qty = parseInt(document.getElementById('p-qty').value);
+                        const cat = document.getElementById('p-cat').value;
+                        if (!name || !cat) {
+                            showToast("Preencha Nome e Categoria!", "error");
+                            shouldClose = false;
+                        } else {
+                            await db.ref("products").push({ name, quantity: qty, category: cat });
+                            showToast("Material adicionado!");
+                            state.currentPage = 'inventory'; 
+                        }
+                    } else if (type === 'employee') {
+                        const name = document.getElementById('e-name').value;
+                        const role = document.getElementById('e-role').value;
+                        if (!name) {
+                            showToast("Digite o nome!", "error");
+                            shouldClose = false;
+                        } else {
+                            await db.ref("employees").push({ name, role: role || "Geral" });
+                            showToast("Funcionário cadastrado!");
+                        }
+                    } else if (type === 'withdraw') {
+                        const emp = document.getElementById('t-emp').value;
+                        const pId = document.getElementById('t-prod').value;
+                        const qty = parseInt(document.getElementById('t-qty').value);
+                        const p = state.products.find(x => x.id === pId);
+                        if (!p || p.quantity < qty) {
+                            showToast("Estoque insuficiente!", "error");
+                            shouldClose = false;
+                        } else {
+                            await db.ref("products/" + pId).update({ quantity: p.quantity - qty });
+                            await db.ref("transactions").push({ 
+                                employeeName: emp, 
+                                productId: pId, 
+                                productName: p.name, 
+                                quantity: qty, 
+                                timestamp: Date.now() 
+                            });
+                            showToast("Saída registrada!");
+                        }
+                    }
+                    if (shouldClose) overlay.remove();
+                    updateUI();
+                } catch (e) { 
+                    console.error(e);
+                    showToast("Erro ao processar.", "error"); 
+                }
+            };
+        }
+
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // --- CABEÇALHO ---
+            doc.setFillColor(15, 23, 42); // Navy
+            doc.rect(0, 0, 210, 40, 'F'); // Top Bar
+            
+            doc.setFontSize(22);
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.text("METAL PRINT", 20, 22);
+            
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text("Relatório de Movimentação de Almoxarifado", 20, 30);
+            
+            doc.setTextColor(255, 255, 255);
+            doc.text(`DATA: ${new Date().toLocaleDateString('pt-BR')}`, 160, 22);
+            doc.text(`HORA: ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`, 160, 28);
+
+            // --- TABELA ---
+            const rows = state.transactions.map(t => [
+                formatDate(t.timestamp).split(',')[0], // Só a data na coluna 1
+                formatDate(t.timestamp).split(',')[1].trim(), // Só a hora na coluna 2
+                t.employeeName.toUpperCase(), 
+                t.productName, 
+                `${t.quantity} un.`
+            ]);
+            
+            doc.autoTable({ 
+                startY: 50, 
+                head: [['DATA', 'HORA', 'FUNCIONÁRIO', 'MATERIAL', 'QTD']], 
+                body: rows,
+                theme: 'striped',
+                headStyles: { 
+                    fillColor: [15, 23, 42], 
+                    textColor: [255, 255, 255], 
+                    fontSize: 10,
+                    fontStyle: 'bold',
+                    halign: 'center'
+                },
+                columnStyles: {
+                    0: { halign: 'center' },
+                    1: { halign: 'center' },
+                    4: { halign: 'center', fontStyle: 'bold' }
+                },
+                styles: { fontSize: 9, cellPadding: 4 },
+                alternateRowStyles: { fillColor: [245, 247, 250] }
+            });
+
+            // --- RODAPÉ E PAGINAÇÃO ---
+            const pageCount = doc.internal.getNumberOfPages();
+            for(let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                
+                // Linha divisória rodapé
+                doc.setDrawColor(226, 232, 240);
+                doc.line(20, 275, 190, 275);
+                
+                doc.setFontSize(8);
+                doc.setTextColor(100, 116, 139);
+                
+                // Créditos
+                const footerText = "Todos os Direitos Reservados para Metal Print ® 2026 | Desenvolvido por Jonas Luis";
+                doc.text(footerText, 105, 282, { align: 'center' });
+                
+                // Paginação
+                doc.text(`Página ${i} de ${pageCount}`, 190, 282, { align: 'right' });
+            }
+            
+            const fileName = `Relatorio_MetalPrint_${new Date().toISOString().slice(0,10)}.pdf`;
+            doc.save(fileName);
+            showToast("PDF Gerado com Sucesso!");
+        }
+    </script>
+</body>
+</html>
