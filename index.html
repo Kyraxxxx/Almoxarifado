@@ -217,7 +217,7 @@
                 <li data-page="withdraw"><i data-lucide="minus-square"></i> Saídas</li>
                 <li data-page="employees"><i data-lucide="users"></i> Funcionários</li>
                 <li data-page="reports"><i data-lucide="file-text"></i> Relatórios</li>
-                <li onclick="generateInventoryPDF()"><i data-lucide="download-cloud"></i> Backup (PDF)</li>
+                <li data-page="backup"><i data-lucide="download-cloud"></i> Backup (PDF)</li>
             </ul>
             <div class="user-profile">
                 <div class="avatar">
@@ -452,7 +452,8 @@
                     document.querySelectorAll('.nav-links li').forEach(l => l.classList.remove('active'));
                     li.classList.add('active');
                     state.currentPage = li.dataset.page;
-                    if (state.currentPage === 'withdraw') showModal('withdraw');
+                    if (state.currentPage === 'backup') generateInventoryPDF();
+                    else if (state.currentPage === 'withdraw') showModal('withdraw');
                     else updateUI();
                 };
             });
@@ -663,61 +664,76 @@
         function generateInventoryPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+            showToast("Gerando Backup Geral...");
             
-            // --- CABEÇALHO ---
-            doc.setFillColor(15, 23, 42); // Navy
-            doc.rect(0, 0, 210, 40, 'F');
+            // --- HEADER MAGNATA ---
+            doc.setFillColor(15, 23, 42); // Navy Dark
+            doc.rect(0, 0, 210, 45, 'F');
             
-            doc.setFontSize(22);
+            doc.setFontSize(24);
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
-            doc.text("METAL PRINT", 20, 22);
+            doc.text("METAL PRINT", 20, 25);
             
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            doc.text("BACKUP GERAL - ESTOQUE & DADOS DO SISTEMA", 20, 30);
+            doc.text("BACKUP COMPLETO DO SISTEMA - RELATÓRIO EXECUTIVO", 20, 35);
             
-            doc.text(`DATA: ${new Date().toLocaleDateString('pt-BR')}`, 160, 22);
-            doc.text(`HORA: ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`, 160, 28);
+            doc.setFontSize(9);
+            doc.text(`DATA: ${new Date().toLocaleDateString('pt-BR')}`, 165, 20);
+            doc.text(`HORA: ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`, 165, 26);
+            doc.text(`ID: MP-BK-${Date.now().toString().slice(-6)}`, 165, 32);
 
-            // --- SEÇÃO 1: ESTOQUE ATUAL ---
+            // --- 1. ESTOQUE ---
             doc.setTextColor(15, 23, 42);
-            doc.setFontSize(12);
+            doc.setFontSize(13);
             doc.setFont("helvetica", "bold");
-            doc.text("1. INVENTÁRIO DE MATERIAIS", 20, 50);
+            doc.text("1. INVENTÁRIO DE ESTOQUE ATUAL", 20, 58);
 
-            const stockRows = state.products.map(p => [
-                p.name.toUpperCase(), 
-                p.category, 
-                `${p.quantity} un.`
-            ]);
-            
+            const stockRows = state.products.map(p => [p.name.toUpperCase(), p.category, `${p.quantity} un.`]);
             doc.autoTable({ 
-                startY: 55, 
-                head: [['MATERIAL / PRODUTO', 'CATEGORIA', 'SALDO ATUAL']], 
+                startY: 63, 
+                head: [['NOME DO MATERIAL', 'CATEGORIA', 'SALDO']], 
                 body: stockRows,
                 theme: 'striped',
-                headStyles: { fillColor: [37, 99, 235], fontSize: 9 }, // Accent Blue
-                styles: { fontSize: 8 },
-                margin: { top: 55 }
+                headStyles: { fillColor: [37, 99, 235], fontSize: 10 }, 
+                styles: { fontSize: 8 }
             });
 
-            // --- SEÇÃO 2: QUADRO DE FUNCIONÁRIOS ---
-            let finalY = doc.lastAutoTable.finalY + 15;
-            doc.setFontSize(12);
-            doc.text("2. QUADRO DE FUNCIONÁRIOS", 20, finalY);
+            // --- 2. FUNCIONÁRIOS ---
+            let nextY = doc.lastAutoTable.finalY + 15;
+            if (nextY > 250) { doc.addPage(); nextY = 20; }
+            doc.setFontSize(13);
+            doc.text("2. QUADRO DE FUNCIONÁRIOS", 20, nextY);
 
-            const empRows = state.employees.map(e => [
-                e.name.toUpperCase(), 
-                e.role || 'GERAL'
-            ]);
-
+            const empRows = state.employees.map(e => [e.name.toUpperCase(), e.role || 'GERAL']);
             doc.autoTable({ 
-                startY: finalY + 5, 
-                head: [['NOME COMPLETO', 'CARGO / SETOR']], 
+                startY: nextY + 5, 
+                head: [['NOME COMPLETO', 'FUNÇÃO / CARGO']], 
                 body: empRows,
                 theme: 'grid',
-                headStyles: { fillColor: [15, 23, 42], fontSize: 9 },
+                headStyles: { fillColor: [15, 23, 42] },
+                styles: { fontSize: 8 }
+            });
+
+            // --- 3. ÚLTIMAS MOVIMENTAÇÕES ---
+            nextY = doc.lastAutoTable.finalY + 15;
+            if (nextY > 250) { doc.addPage(); nextY = 20; }
+            doc.setFontSize(13);
+            doc.text("3. HISTÓRICO RECENTE (20 ÚLTIMAS)", 20, nextY);
+
+            const transRows = state.transactions.slice(0, 20).map(t => [
+                formatDate(t.timestamp), 
+                t.employeeName, 
+                t.productName, 
+                t.quantity
+            ]);
+            doc.autoTable({ 
+                startY: nextY + 5, 
+                head: [['DATA/HORA', 'FUNCIONÁRIO', 'MATERIAL', 'QTD']], 
+                body: transRows,
+                theme: 'striped',
+                headStyles: { fillColor: [100, 116, 139] },
                 styles: { fontSize: 8 }
             });
 
@@ -725,14 +741,16 @@
             const pageCount = doc.internal.getNumberOfPages();
             for(let i = 1; i <= pageCount; i++) {
                 doc.setPage(i);
+                doc.setDrawColor(226, 232, 240);
+                doc.line(20, 280, 190, 280);
                 doc.setFontSize(8);
-                doc.setTextColor(100, 116, 139);
-                doc.text("Documento oficial para fins de auditoria interna - Metal Print", 105, 285, { align: 'center' });
-                doc.text(`Página ${i} de ${pageCount}`, 190, 285, { align: 'right' });
+                doc.setTextColor(148, 163, 184);
+                doc.text("Backup Gerado Automaticamente pelo Sistema Metal Print v4.5", 105, 287, { align: 'center' });
+                doc.text(`Página ${i} de ${pageCount}`, 190, 287, { align: 'right' });
             }
             
-            doc.save(`Backup_Almoxarifado_${new Date().toISOString().slice(0,10)}.pdf`);
-            showToast("Backup PDF Gerado!");
+            doc.save(`BACKUP_METAL_PRINT_${new Date().toISOString().slice(0,10)}.pdf`);
+            showToast("Download do Backup Concluído!");
         }
     </script>
 </body>
