@@ -9,15 +9,15 @@ from datetime import datetime
 # --- CONFIGURAÇÃO FIREBASE ---
 FIREBASE_URL = "https://almoxarifado-dacbe-default-rtdb.firebaseio.com"
 
-# --- CONFIGURAÇÕES VISUAIS (LIGHT MODE PREMIUM) ---
+# --- CONFIGURAÇÕES VISUAIS (HIGH-CONTRAST PREMIUM) ---
 COLORS = {
-    "bg": "#f8fafc",        # Slate 50
-    "sidebar": "#ffffff",   # Pure White
+    "bg": "#f1f5f9",        # Slate 100 (Light Gray)
+    "sidebar": "#0f172a",   # Navy 900 (Dark)
     "card": "#ffffff",      # White
     "accent": "#2563eb",    # Blue 600
     "text": "#0f172a",      # Slate 900
     "text_muted": "#64748b", # Slate 500
-    "border": "#e2e8f0",    # Slate 200
+    "border": "#cbd5e1",    # Slate 300 (Visible borders)
     "success": "#10b981",   # Emerald 500
     "error": "#ef4444",     # Red 500
     "warning": "#f59e0b"    # Amber 500
@@ -71,11 +71,11 @@ class AlmoxarifadoApp(tk.Tk):
         # Heading style for Treeview
         style.configure("Treeview.Heading",
                         font=("Inter", 10, "bold"),
-                        background=COLORS["border"],
-                        foreground=COLORS["text_muted"],
+                        background=COLORS["sidebar"],
+                        foreground="white",
                         relief="flat")
         style.map("Treeview.Heading",
-                  background=[('active', COLORS["border"])])
+                  background=[('active', COLORS["sidebar"])])
 
         # Scrollbar style
         style.configure("Vertical.TScrollbar",
@@ -100,18 +100,18 @@ class AlmoxarifadoApp(tk.Tk):
 
 
     def show_login(self):
-        self.login_frame = tk.Frame(self, bg=COLORS["bg"])
+        self.login_frame = tk.Frame(self, bg=COLORS["sidebar"], padx=50, pady=50, highlightthickness=1, highlightbackground=COLORS["border"])
         self.login_frame.place(relx=0.5, rely=0.5, anchor="center")
         
-        tk.Label(self.login_frame, text="METAL PRINT", font=("Inter", 24, "bold"), fg=COLORS["accent"], bg=COLORS["bg"]).pack(pady=10)
-        tk.Label(self.login_frame, text="ALMOXARIFADO DEV", font=("Inter", 12), fg=COLORS["text_muted"], bg=COLORS["bg"]).pack(pady=(0, 30))
+        tk.Label(self.login_frame, text="METAL PRINT", font=("Inter", 24, "bold"), fg="white", bg=COLORS["sidebar"]).pack(pady=10)
+        tk.Label(self.login_frame, text="ALMOXARIFADO DEV", font=("Inter", 12), fg="#94a3b8", bg=COLORS["sidebar"]).pack(pady=(0, 30))
         
-        self.pwd_entry = tk.Entry(self.login_frame, show="*", font=("Inter", 14), width=20, bd=0, bg=COLORS["card"], fg=COLORS["text"], insertbackground=COLORS["text"], highlightbackground=COLORS["border"], highlightthickness=1)
+        self.pwd_entry = tk.Entry(self.login_frame, show="*", font=("Inter", 14), width=20, bd=0, bg="#1e293b", fg="white", insertbackground="white", highlightbackground=COLORS["border"], highlightthickness=1)
         self.pwd_entry.pack(pady=10, ipady=8)
         self.pwd_entry.focus()
         self.pwd_entry.bind("<Return>", lambda e: self.attempt_login())
         
-        tk.Button(self.login_frame, text="ENTRAR", command=self.attempt_login, bg=COLORS["accent"], fg="white", font=("Inter", 12, "bold"), bd=0, padx=20, pady=8, cursor="hand2").pack(pady=20)
+        tk.Button(self.login_frame, text="ACESSAR PAINEL", command=self.attempt_login, bg=COLORS["accent"], fg="white", font=("Inter", 12, "bold"), bd=0, padx=20, pady=10, cursor="hand2").pack(pady=20)
 
     def attempt_login(self):
         if self.pwd_entry.get() == "jonas":
@@ -140,12 +140,12 @@ class AlmoxarifadoApp(tk.Tk):
         
         for name, cmd in self.menu_items:
             btn = tk.Button(self.sidebar, text=f"  {name}", command=cmd, font=("Inter", 10, "bold"), 
-                           fg=COLORS["text_muted"], bg=COLORS["sidebar"], bd=0, anchor="w", 
-                           padx=20, pady=12, cursor="hand2", activebackground=COLORS["bg"])
+                           fg="#94a3b8", bg=COLORS["sidebar"], bd=0, anchor="w", 
+                           padx=20, pady=12, cursor="hand2", activebackground="#1e293b", activeforeground="white")
             btn.pack(fill="x")
             # Hover effect
-            btn.bind("<Enter>", lambda e, b=btn: b.config(fg=COLORS["accent"], bg=COLORS["bg"]))
-            btn.bind("<Leave>", lambda e, b=btn: b.config(fg=COLORS["text_muted"], bg=COLORS["sidebar"]))
+            btn.bind("<Enter>", lambda e, b=btn: b.config(fg="white", bg="#1e293b"))
+            btn.bind("<Leave>", lambda e, b=btn: b.config(fg="#94a3b8", bg=COLORS["sidebar"]))
 
         self.content = tk.Frame(self, bg=COLORS["bg"], padx=40, pady=40)
         self.content.pack(side="right", fill="both", expand=True)
