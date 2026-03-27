@@ -388,7 +388,8 @@
                                     <td><strong>${p.name}</strong></td>
                                     <td>${p.category}</td>
                                     <td><span class="stock-badge ${p.quantity < 5 ? 'low' : ''}">${p.quantity} unid.</span></td>
-                                    <td style="text-align:right">
+                                    <td style="text-align:right; display:flex; justify-content:flex-end; gap:5px">
+                                        <button class="btn btn-sm" onclick="showModal('entry', '${p.id}')" style="padding:5px; background:none; color:var(--accent)"><i data-lucide="plus-circle"></i></button>
                                         <button class="btn btn-sm" onclick="deleteProduct('${p.id}')" style="padding:5px; background:none; color:var(--text-muted)"><i data-lucide="trash-2"></i></button>
                                     </td>
                                 </tr>
@@ -503,8 +504,8 @@
             });
         }
 
-        function showModal(type) {
-            let title = type === 'add' ? 'Novo Material' : (type === 'withdraw' ? 'Registrar Saída' : 'Novo Funcionário');
+        function showModal(type, productId = null) {
+            let title = type === 'add' ? 'Novo Material' : (type === 'withdraw' ? 'Registrar Saída' : (type === 'entry' ? 'Entrada de Material' : 'Novo Funcionário'));
             let body = '';
             if (type === 'add') {
                 body = `<div class="form-group"><label>Nome</label><input type="text" id="p-name" placeholder="Ex: Lona 440g"></div>
@@ -518,6 +519,11 @@
                 body = `<div class="form-group"><label>Funcionário</label><select id="t-emp">${state.employees.map(e => `<option>${e.name}</option>`).join('')}</select></div>
                         <div class="form-group"><label>Material</label><select id="t-prod">${state.products.map(p => `<option value="${p.id}">${p.name} (Saldo: ${p.quantity})</option>`).join('')}</select></div>
                         <div class="form-group"><label>Quantidade</label><input type="number" id="t-qty" value="1" min="1"></div>`;
+            } else if (type === 'entry') {
+                const p = productId ? state.products.find(x => x.id === productId) : state.products[0];
+                body = `<div class="form-group"><label>Material</label>
+                        <select id="e-prod">${state.products.map(prod => `<option value="${prod.id}" ${prod.id === productId ? 'selected' : ''}>${prod.name} (Atual: ${prod.quantity})</option>`).join('')}</select></div>
+                        <div class="form-group"><label>Quantidade a Adicionar</label><input type="number" id="e-qty" value="1" min="1"></div>`;
             } else if (type === 'employee') {
                 body = `<div class="form-group"><label>Nome</label><input type="text" id="e-name"></div>
                         <div class="form-group"><label>Cargo</label><input type="text" id="e-role"></div>`;
@@ -575,6 +581,24 @@
                                 timestamp: Date.now() 
                             });
                             showToast("Saída registrada!");
+                        }
+                    } else if (type === 'entry') {
+                        const pId = document.getElementById('e-prod').value;
+                        const qty = parseInt(document.getElementById('e-qty').value);
+                        const p = state.products.find(x => x.id === pId);
+                        if (!p || !qty || qty <= 0) {
+                            showToast("Quantidade inválida!", "error");
+                            shouldClose = false;
+                        } else {
+                            await db.ref("products/" + pId).update({ quantity: p.quantity + qty });
+                            await db.ref("transactions").push({ 
+                                employeeName: "ENTRADA", 
+                                productId: pId, 
+                                productName: p.name, 
+                                quantity: "+" + qty, 
+                                timestamp: Date.now() 
+                            });
+                            showToast("Estoque atualizado!");
                         }
                     }
                     if (shouldClose) overlay.remove();
